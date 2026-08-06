@@ -9,26 +9,30 @@ export const SESSION_CONFIG = {
   participanteDefault: 'P001',
 
   /**
-   * Fecha de referencia fija de la sesión (martes 17 de marzo de 2026).
-   * El criterio "fecha" y el texto de fecha de cada correo del corpus se
-   * calculan contra esta referencia, nunca contra la fecha real del sistema,
-   * para que la clasificación correcta sea determinista.
+   * Fecha fija contra la que está escrito el texto del corpus (ver
+   * corpus.ts) — nunca se muestra ni se usa para clasificar. En tiempo de
+   * ejecución, cada fecha de correo se reproyecta conservando la misma
+   * distancia en días desde esta ancla, pero contada desde
+   * `fechaReferenciaSesion` (la fecha real de hoy), para que el corpus
+   * siempre luzca actual sin reescribir su contenido.
    */
-  fechaReferenciaISO: '2026-03-17T09:00:00',
+  anclaCorpusISO: '2026-03-17T09:00:00',
 
-  duracionBloqueMs: 120_000,
-  intervaloLlegadaMs: 15_000,
+  /** Fecha real de "hoy", calculada una única vez al cargar la sesión. */
+  fechaReferenciaSesion: new Date(),
+
+  /**
+   * Duración por defecto de cada bloque, en minutos. Es editable por bloque
+   * desde la pantalla de inicio (ver StartScreen / App): estos valores son
+   * solo el punto de partida que se ofrece antes de arrancar.
+   */
+  duracionBloqueMinDefault: 2,
+
   correosPorBloque: 8,
   pausaEntreBloquesMs: 5_000,
 
   /** Orden de criterios a lo largo de los bloques: bloque 1, 2 y 3. */
   ordenCriterios: ['fecha', 'prioridad', 'departamento'] as CriterionId[],
 } as const;
-
-/** Offsets de llegada (ms desde el inicio del bloque): 0, 15000, ..., 105000. */
-export const OFFSETS_LLEGADA_MS: number[] = Array.from(
-  { length: SESSION_CONFIG.correosPorBloque },
-  (_, i) => i * SESSION_CONFIG.intervaloLlegadaMs,
-);
 
 export const TICK_INTERVALO_MS = 100;

@@ -1,5 +1,7 @@
+import { proyectarFechaCorreo } from '../domain/fechaCorreo';
 import type { Email } from '../domain/types';
 import { CATEGORIA_DEPARTAMENTO, CATEGORIA_FECHA, CATEGORIA_PRIORIDAD } from './criteria.config';
+import { SESSION_CONFIG } from './session.config';
 
 /**
  * Corpus de 24 correos, 8 por bloque, sin repetición entre bloques.
@@ -11,8 +13,11 @@ import { CATEGORIA_DEPARTAMENTO, CATEGORIA_FECHA, CATEGORIA_PRIORIDAD } from './
  * cada bloque (y por lo tanto también en el corpus completo), para que
  * ninguna carpeta quede sin uso y no se pueda acertar por frecuencia.
  *
- * Las fechas están escritas contra SESSION_CONFIG.fechaReferenciaISO
- * (17 de marzo de 2026) — ver session.config.ts.
+ * Las fechas de abajo están escritas contra SESSION_CONFIG.anclaCorpusISO
+ * (17 de marzo de 2026) — ver session.config.ts. `CORPUS_POR_BLOQUE`, al
+ * final del archivo, exporta esas fechas reproyectadas contra la fecha real
+ * de hoy, para que la bandeja siempre luzca actual sin tener que reescribir
+ * el corpus.
  */
 
 const CORPUS_BLOQUE_1: Email[] = [
@@ -369,5 +374,21 @@ const CORPUS_BLOQUE_3: Email[] = [
   },
 ];
 
-/** Índice 0 = bloque 1 (fecha), índice 1 = bloque 2 (prioridad), índice 2 = bloque 3 (departamento). */
-export const CORPUS_POR_BLOQUE: Email[][] = [CORPUS_BLOQUE_1, CORPUS_BLOQUE_2, CORPUS_BLOQUE_3];
+function proyectarBloque(bloque: Email[]): Email[] {
+  return bloque.map((email) => ({
+    ...email,
+    fechaTexto: proyectarFechaCorreo(
+      email.fechaTexto,
+      SESSION_CONFIG.anclaCorpusISO,
+      SESSION_CONFIG.fechaReferenciaSesion,
+    ),
+  }));
+}
+
+/**
+ * Índice 0 = bloque 1 (fecha), índice 1 = bloque 2 (prioridad), índice 2 =
+ * bloque 3 (departamento). Las fechas ya vienen reproyectadas contra hoy.
+ */
+export const CORPUS_POR_BLOQUE: Email[][] = [CORPUS_BLOQUE_1, CORPUS_BLOQUE_2, CORPUS_BLOQUE_3].map(
+  proyectarBloque,
+);

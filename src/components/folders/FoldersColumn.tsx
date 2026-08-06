@@ -23,8 +23,8 @@ export function FoldersColumn({ pestanaActiva, onCambiarPestana }: FoldersColumn
         <CriterionTabs activo={pestanaActiva} onChange={onCambiarPestana} />
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-3">
-        <div className="grid grid-cols-2 gap-3">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-3">
+        <div className="flex min-h-full flex-col gap-3">
           {criterio.categorias.map((categoria) => (
             <FolderDropZone key={categoria.id} categoria={categoria} />
           ))}

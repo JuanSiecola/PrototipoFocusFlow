@@ -9,6 +9,7 @@ import {
   useSensors,
 } from '@dnd-kit/core';
 import { useCallback, useState } from 'react';
+import { DistractorPopup } from './components/distractors/DistractorPopup';
 import { ErrorToast } from './components/feedback/ErrorToast';
 import { FoldersColumn } from './components/folders/FoldersColumn';
 import { InboxColumn } from './components/inbox/InboxColumn';
@@ -16,9 +17,15 @@ import { AppShell } from './components/layout/AppShell';
 import { EmailReaderColumn } from './components/reader/EmailReaderColumn';
 import { StartScreen } from './components/screens/StartScreen';
 import { SummaryScreen } from './components/screens/SummaryScreen';
+import {
+  DISTRACTOR_SECUENCIA,
+  DISTRACTOR_VOLUMEN_DEFAULT_PCT,
+  type DistractorLevel,
+} from './config/distractors.config';
 import { SESSION_CONFIG } from './config/session.config';
 import { evaluarClasificacion } from './domain/classification';
 import type { CriterionId } from './domain/types';
+import { useDistractorPopups } from './engine/useDistractorPopups';
 import { useEmailQueue } from './engine/useEmailQueue';
 import { useSessionEngine } from './engine/useSessionEngine';
 import { descargarCsv } from './logging/csvExporter';
@@ -33,18 +40,41 @@ export default function App() {
   const emailQueue = useEmailQueue();
   const [pestanaActiva, setPestanaActiva] = useState<CriterionId>(SESSION_CONFIG.ordenCriterios[0]);
   const [eventos, setEventos] = useState<SessionEvent[]>([]);
-  const [clasificadosEnBloque, setClasificadosEnBloque] = useState(0);
+  const [totalClasificados, setTotalClasificados] = useState(0);
   const [recienClasificadoId, setRecienClasificadoId] = useState<string | null>(null);
   const [errorToastTrigger, setErrorToastTrigger] = useState(0);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [duracionesBloqueMin, setDuracionesBloqueMin] = useState<number[]>(() =>
+    SESSION_CONFIG.ordenCriterios.map(() => SESSION_CONFIG.duracionBloqueMinDefault),
+  );
+  const [volumenesPopup, setVolumenesPopup] = useState<Record<DistractorLevel, number>>(() =>
+    Object.fromEntries(DISTRACTOR_SECUENCIA.map((nivel) => [nivel, DISTRACTOR_VOLUMEN_DEFAULT_PCT])) as Record<
+      DistractorLevel,
+      number
+    >,
+  );
 
   const handleDismissErrorToast = useCallback(() => setErrorToastTrigger(0), []);
 
+  const handleCambiarDuracion = useCallback((indice: number, minutos: number) => {
+    setDuracionesBloqueMin((prev) => prev.map((valor, i) => (i === indice ? minutos : valor)));
+  }, []);
+
+  const handleCambiarVolumen = useCallback((nivel: DistractorLevel, porcentaje: number) => {
+    setVolumenesPopup((prev) => ({ ...prev, [nivel]: porcentaje }));
+  }, []);
+
   const engine = useSessionEngine({
+    duracionesBloqueMs: duracionesBloqueMin.map((min) => Math.round(min * 60_000)),
     onEmailArrival: (email, ctx) => {
       emailQueue.agregarCorreo(email, ctx.arrivalTsMs, ctx.esPrimerCorreoDelBloque);
     },
-    onBlockEnd: (ctx) => {
+    // Al cambiar el criterio, los correos que quedaron sin clasificar NO se
+    // descartan: siguen en la bandeja y pasan a evaluarse contra el nuevo
+    // criterio vigente (evaluarClasificacion ya usa el criterio actual, no
+    // el que regía cuando el correo llegó).
+    onBlockEnd: () => {},
+    onSessionEnd: (ctx) => {
       const descartes = emailQueue.pendientes.map((item) =>
         crearEventoDescartado({
           participante: SESSION_CONFIG.participanteDefault,
@@ -58,11 +88,11 @@ export default function App() {
       if (descartes.length > 0) {
         setEventos((prev) => [...prev, ...descartes]);
       }
-      emailQueue.vaciar();
-      setClasificadosEnBloque(0);
     },
-    onSessionEnd: () => {},
   });
+
+  const sesionActiva = engine.fase === 'bloque' || engine.fase === 'pausa';
+  const distractores = useDistractorPopups(sesionActiva);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
@@ -104,7 +134,7 @@ export default function App() {
     setEventos((prev) => [...prev, evento]);
 
     if (resultado.correcto) {
-      setClasificadosEnBloque((n) => n + 1);
+      setTotalClasificados((n) => n + 1);
       setRecienClasificadoId(emailId);
       window.setTimeout(() => {
         emailQueue.removerCorreo(emailId);
@@ -116,7 +146,15 @@ export default function App() {
   }
 
   if (engine.fase === 'inicio') {
-    return <StartScreen onStart={engine.iniciar} />;
+    return (
+      <StartScreen
+        duracionesBloqueMin={duracionesBloqueMin}
+        onCambiarDuracion={handleCambiarDuracion}
+        volumenesPopup={volumenesPopup}
+        onCambiarVolumen={handleCambiarVolumen}
+        onStart={engine.iniciar}
+      />
+    );
   }
 
   if (engine.fase === 'fin') {
@@ -136,7 +174,11 @@ export default function App() {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <AppShell clasificados={clasificadosEnBloque} totalBloque={SESSION_CONFIG.correosPorBloque}>
+      <AppShell
+        clasificados={totalClasificados}
+        totalCorreos={SESSION_CONFIG.correosPorBloque * SESSION_CONFIG.ordenCriterios.length}
+        tiempoSesionMs={engine.tiempoSesionMs}
+      >
         <InboxColumn
           items={emailQueue.pendientes}
           seleccionadoId={emailQueue.correoSeleccionadoId}
@@ -159,6 +201,16 @@ export default function App() {
       </DragOverlay>
 
       <ErrorToast trigger={errorToastTrigger} onDismiss={handleDismissErrorToast} />
+
+      {distractores.popup && (
+        <DistractorPopup
+          key={distractores.popup.id}
+          popupId={distractores.popup.id}
+          nivel={distractores.popup.nivel}
+          volumenPct={volumenesPopup[distractores.popup.nivel]}
+          onClose={distractores.cerrar}
+        />
+      )}
     </DndContext>
   );
 }

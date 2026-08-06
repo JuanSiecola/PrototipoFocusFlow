@@ -16,7 +16,6 @@ export interface UseEmailQueueResult {
   abrirCorreo: (id: string, ahoraMs: number) => void;
   seleccionarCorreo: (id: string | null) => void;
   removerCorreo: (id: string) => void;
-  vaciar: () => void;
 }
 
 /**
@@ -66,11 +65,6 @@ export function useEmailQueue(): UseEmailQueueResult {
     setCorreoSeleccionadoId((prev) => (prev === id ? null : prev));
   }, []);
 
-  const vaciar = useCallback(() => {
-    setPendientes([]);
-    setCorreoSeleccionadoId(null);
-  }, []);
-
   return {
     pendientes,
     correoSeleccionadoId,
@@ -78,6 +72,5 @@ export function useEmailQueue(): UseEmailQueueResult {
     abrirCorreo,
     seleccionarCorreo,
     removerCorreo,
-    vaciar,
   };
 }
