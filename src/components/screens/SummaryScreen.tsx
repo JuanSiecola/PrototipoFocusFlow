@@ -1,12 +1,19 @@
-import { CheckCircle2, Download } from 'lucide-react';
+import { CheckCircle2, Download, RotateCcw } from 'lucide-react';
 import type { AttemptEvent, SessionEvent } from '../../logging/eventLog';
 
 interface SummaryScreenProps {
   eventos: SessionEvent[];
   onDescargar: () => void;
+  onReiniciarNuevoParticipante: () => void;
+  onReiniciarMismaConfig: () => void;
 }
 
-export function SummaryScreen({ eventos, onDescargar }: SummaryScreenProps) {
+export function SummaryScreen({
+  eventos,
+  onDescargar,
+  onReiniciarNuevoParticipante,
+  onReiniciarMismaConfig,
+}: SummaryScreenProps) {
   const intentos = eventos.filter((e): e is AttemptEvent => e.tipo === 'intento');
   const descartados = eventos.filter((e) => e.tipo === 'descartado');
   const correctos = intentos.filter((e) => e.correcto).length;
@@ -38,6 +45,24 @@ export function SummaryScreen({ eventos, onDescargar }: SummaryScreenProps) {
         >
           <Download size={16} />
           Descargar CSV
+        </button>
+
+        <button
+          type="button"
+          onClick={onReiniciarMismaConfig}
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-6 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 active:bg-slate-100"
+        >
+          <RotateCcw size={16} />
+          Nueva sesión (misma configuración)
+        </button>
+
+        <button
+          type="button"
+          onClick={onReiniciarNuevoParticipante}
+          className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-6 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50 active:bg-slate-100"
+        >
+          <RotateCcw size={16} />
+          Nueva sesión
         </button>
       </div>
     </div>

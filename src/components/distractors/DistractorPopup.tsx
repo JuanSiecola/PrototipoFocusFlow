@@ -1,6 +1,6 @@
 import { type LucideIcon, Megaphone, RefreshCw, ShieldAlert, X } from 'lucide-react';
 import { useEffect } from 'react';
-import { DISTRACTOR_CONTENIDO, DISTRACTOR_DURACION_MS, type DistractorLevel } from '../../config/distractors.config';
+import { DISTRACTOR_CONTENIDO, type DistractorLevel } from '../../config/distractors.config';
 import { reproducirSonidoPopup } from './popupSound';
 
 interface DistractorPopupProps {
@@ -17,7 +17,6 @@ interface EstiloNivel {
   posicion: string;
   contenedor: string;
   icono: string;
-  barra: string;
   Icono: LucideIcon;
   pulso?: boolean;
 }
@@ -28,7 +27,6 @@ const ESTILO_POR_NIVEL: Record<DistractorLevel, EstiloNivel> = {
     posicion: 'top-24 right-4',
     contenedor: 'border-slate-200 bg-white',
     icono: 'bg-blue-50 text-blue-600',
-    barra: 'bg-blue-500',
     Icono: Megaphone,
   },
   nivel2: {
@@ -37,7 +35,6 @@ const ESTILO_POR_NIVEL: Record<DistractorLevel, EstiloNivel> = {
     posicion: 'bottom-4 right-4',
     contenedor: 'border-slate-300 bg-white',
     icono: 'bg-sky-50 text-sky-600',
-    barra: 'bg-sky-500',
     Icono: RefreshCw,
   },
   nivel3: {
@@ -46,7 +43,6 @@ const ESTILO_POR_NIVEL: Record<DistractorLevel, EstiloNivel> = {
     posicion: 'bottom-4 right-4',
     contenedor: 'border-red-200 bg-red-50',
     icono: 'bg-red-100 text-red-600',
-    barra: 'bg-red-500',
     Icono: ShieldAlert,
     pulso: true,
   },
@@ -114,12 +110,6 @@ export function DistractorPopup({ popupId, nivel, volumenPct, onClose }: Distrac
           {cerrarBoton}
         </div>
       )}
-      <div className="h-1.5 w-full bg-slate-100">
-        <div
-          className={`h-full ${estilo.barra}`}
-          style={{ animation: `distractor-shrink ${DISTRACTOR_DURACION_MS}ms linear forwards` }}
-        />
-      </div>
     </div>
   );
 }

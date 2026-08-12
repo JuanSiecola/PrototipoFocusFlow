@@ -8,9 +8,6 @@ export interface DistractorContent {
 /** Cada cuántos ms aparece un nuevo pop-up mientras la sesión está activa. */
 export const DISTRACTOR_INTERVALO_MS = 20_000;
 
-/** Cuánto queda visible un pop-up si el participante no lo cierra antes. */
-export const DISTRACTOR_DURACION_MS = 10_000;
-
 /**
  * Volumen por defecto de cada nivel, en % (100 = el diseñado en
  * popupSound.ts, 0 = silencio). Editable por nivel desde la pantalla de

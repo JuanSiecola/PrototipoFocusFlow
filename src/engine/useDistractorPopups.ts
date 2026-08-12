@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  DISTRACTOR_DURACION_MS,
   DISTRACTOR_INTERVALO_MS,
   DISTRACTOR_SECUENCIA,
   type DistractorLevel,
@@ -18,17 +17,29 @@ export interface UseDistractorPopupsResult {
 }
 
 /**
- * Hace aparecer un pop-up distractor cada `DISTRACTOR_INTERVALO_MS` mientras
- * `activo` sea true, ciclando `DISTRACTOR_SECUENCIA`. Cada uno se autocierra
- * a los `DISTRACTOR_DURACION_MS` si el participante no lo cierra antes. No
- * sabe nada de bloques ni de la bandeja: solo administra qué pop-up mostrar.
+ * Hace aparecer un pop-up distractor a los `DISTRACTOR_INTERVALO_MS` de
+ * iniciada la sesión, ciclando `DISTRACTOR_SECUENCIA`. No se autocierra: el
+ * pop-up queda visible hasta que el participante lo cierra, y recién ahí se
+ * agenda la próxima aparición. No sabe nada de bloques ni de la bandeja:
+ * solo administra qué pop-up mostrar.
  */
 export function useDistractorPopups(activo: boolean): UseDistractorPopupsResult {
   const [popup, setPopup] = useState<DistractorActivo | null>(null);
 
   const contadorRef = useRef(0);
   const idRef = useRef(0);
-  const autoCierreRef = useRef<number | null>(null);
+  const spawnTimeoutRef = useRef<number | null>(null);
+  const activoRef = useRef(activo);
+  activoRef.current = activo;
+
+  const programarSiguiente = useCallback(() => {
+    spawnTimeoutRef.current = window.setTimeout(() => {
+      const nivel = DISTRACTOR_SECUENCIA[contadorRef.current % DISTRACTOR_SECUENCIA.length];
+      contadorRef.current += 1;
+      idRef.current += 1;
+      setPopup({ id: idRef.current, nivel });
+    }, DISTRACTOR_INTERVALO_MS);
+  }, []);
 
   useEffect(() => {
     if (!activo) {
@@ -36,33 +47,20 @@ export function useDistractorPopups(activo: boolean): UseDistractorPopupsResult 
       return;
     }
 
-    const spawnId = window.setInterval(() => {
-      const nivel = DISTRACTOR_SECUENCIA[contadorRef.current % DISTRACTOR_SECUENCIA.length];
-      contadorRef.current += 1;
-      idRef.current += 1;
-      const nuevoId = idRef.current;
-
-      setPopup({ id: nuevoId, nivel });
-
-      if (autoCierreRef.current !== null) window.clearTimeout(autoCierreRef.current);
-      autoCierreRef.current = window.setTimeout(() => {
-        setPopup((actual) => (actual?.id === nuevoId ? null : actual));
-      }, DISTRACTOR_DURACION_MS);
-    }, DISTRACTOR_INTERVALO_MS);
+    programarSiguiente();
 
     return () => {
-      window.clearInterval(spawnId);
-      if (autoCierreRef.current !== null) window.clearTimeout(autoCierreRef.current);
+      if (spawnTimeoutRef.current !== null) {
+        window.clearTimeout(spawnTimeoutRef.current);
+        spawnTimeoutRef.current = null;
+      }
     };
-  }, [activo]);
+  }, [activo, programarSiguiente]);
 
-  const cerrar = () => {
+  const cerrar = useCallback(() => {
     setPopup(null);
-    if (autoCierreRef.current !== null) {
-      window.clearTimeout(autoCierreRef.current);
-      autoCierreRef.current = null;
-    }
-  };
+    if (activoRef.current) programarSiguiente();
+  }, [programarSiguiente]);
 
   return { popup, cerrar };
 }

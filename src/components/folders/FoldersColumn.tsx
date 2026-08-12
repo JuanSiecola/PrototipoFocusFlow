@@ -7,9 +7,15 @@ import { FolderDropZone } from './FolderDropZone';
 interface FoldersColumnProps {
   pestanaActiva: CriterionId;
   onCambiarPestana: (id: CriterionId) => void;
+  /** Carpeta destino del último drop incorrecto vigente, o null si no hay ninguno. */
+  errorCarpetaId: string | null;
 }
 
-export function FoldersColumn({ pestanaActiva, onCambiarPestana }: FoldersColumnProps) {
+export function FoldersColumn({
+  pestanaActiva,
+  onCambiarPestana,
+  errorCarpetaId,
+}: FoldersColumnProps) {
   const criterio = getCriterio(pestanaActiva);
 
   return (
@@ -26,7 +32,11 @@ export function FoldersColumn({ pestanaActiva, onCambiarPestana }: FoldersColumn
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-3">
         <div className="flex min-h-full flex-col gap-3">
           {criterio.categorias.map((categoria) => (
-            <FolderDropZone key={categoria.id} categoria={categoria} />
+            <FolderDropZone
+              key={categoria.id}
+              categoria={categoria}
+              enError={categoria.id === errorCarpetaId}
+            />
           ))}
         </div>
       </div>

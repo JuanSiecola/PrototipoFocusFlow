@@ -77,12 +77,3 @@ body {
 .animate-popup-in {
   animation: popup-in 0.25s ease-out;
 }
-
-@keyframes distractor-shrink {
-  from {
-    width: 100%;
-  }
-  to {
-    width: 0%;
-  }
-}

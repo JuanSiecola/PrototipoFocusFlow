@@ -33,11 +33,11 @@ export interface SessionEngineState {
   /** No debe mostrarse al participante: revelarlo arruina el paradigma. */
   criterioVigente: CriterionId;
   tiempoRestanteMs: number;
-  /** ms transcurridos desde el inicio de la sesión completa; seguro de mostrar. */
-  tiempoSesionMs: number;
   iniciar: () => void;
   /** ms transcurridos desde el inicio de la sesión, para timestamping de eventos de UI. */
   ahoraMs: () => number;
+  /** Termina el bloque vigente ya, sin esperar a que se agote su duración (no-op fuera de fase 'bloque'). */
+  forzarFinDeBloque: () => void;
 }
 
 /**
@@ -64,7 +64,6 @@ export function useSessionEngine(options: UseSessionEngineOptions): SessionEngin
     SESSION_CONFIG.ordenCriterios[0],
   );
   const [tiempoRestanteMs, setTiempoRestanteMs] = useState(0);
-  const [tiempoSesionMs, setTiempoSesionMs] = useState(0);
 
   const faseRef = useRef<FaseSesion>('inicio');
   const bloqueIndexRef = useRef(0);
@@ -116,13 +115,33 @@ export function useSessionEngine(options: UseSessionEngineOptions): SessionEngin
     iniciarBloque(0, ahora);
   }, [iniciarBloque]);
 
+  /**
+   * Termina el bloque vigente: pasa a la fase 'pausa', desde donde el tick
+   * loop arranca el siguiente bloque (o termina la sesión si era el
+   * último). La usan tanto el vencimiento del timer como el avance
+   * anticipado por aciertos, para que ambos caminos sean indistinguibles
+   * para el participante.
+   */
+  const finalizarBloqueActual = useCallback((ahora: number) => {
+    const indice = bloqueIndexRef.current;
+    const criterio = SESSION_CONFIG.ordenCriterios[indice];
+    onBlockEndRef.current({ bloqueNumero: indice + 1, criterioVigente: criterio });
+    phaseStartRef.current = ahora;
+    faseRef.current = 'pausa';
+    setFase('pausa');
+    setTiempoRestanteMs(SESSION_CONFIG.pausaEntreBloquesMs);
+  }, []);
+
+  const forzarFinDeBloque = useCallback(() => {
+    if (faseRef.current !== 'bloque') return;
+    finalizarBloqueActual(performance.now());
+  }, [finalizarBloqueActual]);
+
   useEffect(() => {
     const id = window.setInterval(() => {
       const ahora = performance.now();
       const sessionStart = sessionStartRef.current;
       if (sessionStart === null) return;
-
-      setTiempoSesionMs(Math.max(0, ahora - sessionStart));
 
       if (faseRef.current === 'bloque') {
         const elapsed = ahora - phaseStartRef.current;
@@ -146,11 +165,7 @@ export function useSessionEngine(options: UseSessionEngineOptions): SessionEngin
         setTiempoRestanteMs(Math.max(0, duracion - elapsed));
 
         if (elapsed >= duracion) {
-          onBlockEndRef.current({ bloqueNumero: indice + 1, criterioVigente: criterio });
-          phaseStartRef.current = ahora;
-          faseRef.current = 'pausa';
-          setFase('pausa');
-          setTiempoRestanteMs(SESSION_CONFIG.pausaEntreBloquesMs);
+          finalizarBloqueActual(ahora);
         }
         return;
       }
@@ -177,15 +192,15 @@ export function useSessionEngine(options: UseSessionEngineOptions): SessionEngin
     }, TICK_INTERVALO_MS);
 
     return () => window.clearInterval(id);
-  }, [iniciarBloque, duracionBloque]);
+  }, [iniciarBloque, duracionBloque, finalizarBloqueActual]);
 
   return {
     fase,
     bloqueNumero,
     criterioVigente,
     tiempoRestanteMs,
-    tiempoSesionMs,
     iniciar,
     ahoraMs,
+    forzarFinDeBloque,
   };
 }

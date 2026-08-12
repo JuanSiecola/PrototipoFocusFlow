@@ -31,6 +31,16 @@ export const SESSION_CONFIG = {
   correosPorBloque: 8,
   pausaEntreBloquesMs: 5_000,
 
+  /** Cuánto queda en rojo la carpeta donde se soltó un correo mal clasificado. */
+  errorFeedbackDuracionMs: 1_200,
+
+  /**
+   * Aciertos acumulados dentro de un bloque (los errores intermedios no
+   * reinician el contador) que hacen avanzar al bloque siguiente antes de
+   * que se agote su duración configurada.
+   */
+  aciertosParaAvanzar: 5,
+
   /** Orden de criterios a lo largo de los bloques: bloque 1, 2 y 3. */
   ordenCriterios: ['fecha', 'prioridad', 'departamento'] as CriterionId[],
 } as const;

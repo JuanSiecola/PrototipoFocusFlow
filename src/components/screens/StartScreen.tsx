@@ -4,6 +4,8 @@ import { DISTRACTOR_CONTENIDO, DISTRACTOR_SECUENCIA, type DistractorLevel } from
 import { SESSION_CONFIG } from '../../config/session.config';
 
 interface StartScreenProps {
+  participanteId: string;
+  onCambiarParticipanteId: (id: string) => void;
   duracionesBloqueMin: number[];
   onCambiarDuracion: (indice: number, minutos: number) => void;
   volumenesPopup: Record<DistractorLevel, number>;
@@ -15,12 +17,23 @@ const DURACION_MIN = 1;
 const DURACION_MAX = 30;
 
 export function StartScreen({
+  participanteId,
+  onCambiarParticipanteId,
   duracionesBloqueMin,
   onCambiarDuracion,
   volumenesPopup,
   onCambiarVolumen,
   onStart,
 }: StartScreenProps) {
+  const handleChangeParticipante = (e: ChangeEvent<HTMLInputElement>) => {
+    onCambiarParticipanteId(e.target.value);
+  };
+
+  const handleBlurParticipante = (e: FocusEvent<HTMLInputElement>) => {
+    const valor = e.target.value.trim();
+    onCambiarParticipanteId(valor === '' ? SESSION_CONFIG.participanteDefault : valor);
+  };
+
   const handleChange = (indice: number) => (e: ChangeEvent<HTMLInputElement>) => {
     const valor = e.target.valueAsNumber;
     onCambiarDuracion(indice, Number.isNaN(valor) ? 0 : valor);
@@ -48,6 +61,23 @@ export function StartScreen({
         </p>
 
         <div className="mt-8 rounded-xl border border-slate-200 bg-slate-50 p-4 text-left">
+          <label
+            htmlFor="participante-id"
+            className="text-xs font-semibold uppercase tracking-wide text-slate-500"
+          >
+            Identificador de participante
+          </label>
+          <input
+            id="participante-id"
+            type="text"
+            value={participanteId}
+            onChange={handleChangeParticipante}
+            onBlur={handleBlurParticipante}
+            className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none"
+          />
+        </div>
+
+        <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-left">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             Duración de cada bloque
           </p>
