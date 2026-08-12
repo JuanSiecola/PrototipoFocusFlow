@@ -1,5 +1,8 @@
 export type DistractorLevel = 'nivel1' | 'nivel2' | 'nivel3';
 
+/** Distractor asignado a un bloque: uno de los 3 niveles, o ninguno. */
+export type DistractorAsignado = DistractorLevel | 'ninguno';
+
 export interface DistractorContent {
   titulo: string;
   mensaje: string;

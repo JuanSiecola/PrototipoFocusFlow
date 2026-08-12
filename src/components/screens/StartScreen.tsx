@@ -1,6 +1,11 @@
 import { Mail } from 'lucide-react';
 import type { ChangeEvent, FocusEvent } from 'react';
-import { DISTRACTOR_CONTENIDO, DISTRACTOR_SECUENCIA, type DistractorLevel } from '../../config/distractors.config';
+import {
+  DISTRACTOR_CONTENIDO,
+  DISTRACTOR_SECUENCIA,
+  type DistractorAsignado,
+  type DistractorLevel,
+} from '../../config/distractors.config';
 import { SESSION_CONFIG } from '../../config/session.config';
 
 interface StartScreenProps {
@@ -10,6 +15,8 @@ interface StartScreenProps {
   onCambiarDuracion: (indice: number, minutos: number) => void;
   volumenesPopup: Record<DistractorLevel, number>;
   onCambiarVolumen: (nivel: DistractorLevel, porcentaje: number) => void;
+  distractoresPorBloque: DistractorAsignado[];
+  onCambiarDistractorBloque: (indice: number, asignado: DistractorAsignado) => void;
   onStart: () => void;
 }
 
@@ -23,6 +30,8 @@ export function StartScreen({
   onCambiarDuracion,
   volumenesPopup,
   onCambiarVolumen,
+  distractoresPorBloque,
+  onCambiarDistractorBloque,
   onStart,
 }: StartScreenProps) {
   const handleChangeParticipante = (e: ChangeEvent<HTMLInputElement>) => {
@@ -46,6 +55,10 @@ export function StartScreen({
 
   const handleCambiarVolumen = (nivel: DistractorLevel) => (e: ChangeEvent<HTMLInputElement>) => {
     onCambiarVolumen(nivel, e.target.valueAsNumber);
+  };
+
+  const handleCambiarDistractor = (indice: number) => (e: ChangeEvent<HTMLSelectElement>) => {
+    onCambiarDistractorBloque(indice, e.target.value as DistractorAsignado);
   };
 
   return (
@@ -102,6 +115,34 @@ export function StartScreen({
                   />
                   <span className="text-sm text-slate-400">min</span>
                 </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-left">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+            Distractor por bloque
+          </p>
+          <div className="mt-3 space-y-2">
+            {SESSION_CONFIG.ordenCriterios.map((criterioId, indice) => (
+              <div key={criterioId} className="flex items-center justify-between gap-3">
+                <label htmlFor={`distractor-${criterioId}`} className="text-sm text-slate-600">
+                  Bloque {indice + 1}
+                </label>
+                <select
+                  id={`distractor-${criterioId}`}
+                  value={distractoresPorBloque[indice]}
+                  onChange={handleCambiarDistractor(indice)}
+                  className="rounded-lg border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900 focus:border-blue-500 focus:outline-none"
+                >
+                  <option value="ninguno">Sin distractor</option>
+                  {DISTRACTOR_SECUENCIA.map((nivel) => (
+                    <option key={nivel} value={nivel}>
+                      {DISTRACTOR_CONTENIDO[nivel].titulo}
+                    </option>
+                  ))}
+                </select>
               </div>
             ))}
           </div>

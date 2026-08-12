@@ -1,3 +1,4 @@
+import type { DistractorAsignado } from '../config/distractors.config';
 import type { ClassificationResult } from '../domain/classification';
 import type { CriterionId, Email } from '../domain/types';
 
@@ -5,6 +6,7 @@ interface CamposComunes {
   participante: string;
   bloque: number;
   criterioVigente: CriterionId;
+  distractorBloque: DistractorAsignado;
   idCorreo: string;
   asunto: string;
   tLlegadaMs: number;
@@ -38,6 +40,7 @@ export function crearEventoIntento(params: {
   participante: string;
   bloque: number;
   criterioVigente: CriterionId;
+  distractorBloque: DistractorAsignado;
   email: Email;
   tLlegadaMs: number;
   tPrimeraAperturaMs: number;
@@ -53,6 +56,7 @@ export function crearEventoIntento(params: {
     participante: params.participante,
     bloque: params.bloque,
     criterioVigente: params.criterioVigente,
+    distractorBloque: params.distractorBloque,
     idCorreo: params.email.id,
     asunto: params.email.asunto,
     tLlegadaMs: params.tLlegadaMs,
@@ -72,6 +76,7 @@ export function crearEventoDescartado(params: {
   participante: string;
   bloque: number;
   criterioVigente: CriterionId;
+  distractorBloque: DistractorAsignado;
   email: Email;
   tLlegadaMs: number;
   tPrimeraAperturaMs: number | null;
@@ -81,6 +86,7 @@ export function crearEventoDescartado(params: {
     participante: params.participante,
     bloque: params.bloque,
     criterioVigente: params.criterioVigente,
+    distractorBloque: params.distractorBloque,
     idCorreo: params.email.id,
     asunto: params.email.asunto,
     tLlegadaMs: params.tLlegadaMs,
