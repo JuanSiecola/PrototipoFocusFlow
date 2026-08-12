@@ -1,4 +1,4 @@
-import type { DistractorAsignado } from '../config/distractors.config';
+import type { DistractorLevel } from '../config/distractors.config';
 import type { ClassificationResult } from '../domain/classification';
 import type { CriterionId, Email } from '../domain/types';
 
@@ -6,7 +6,7 @@ interface CamposComunes {
   participante: string;
   bloque: number;
   criterioVigente: CriterionId;
-  distractorBloque: DistractorAsignado;
+  distractorBloque: DistractorLevel[];
   idCorreo: string;
   asunto: string;
   tLlegadaMs: number;
@@ -40,7 +40,7 @@ export function crearEventoIntento(params: {
   participante: string;
   bloque: number;
   criterioVigente: CriterionId;
-  distractorBloque: DistractorAsignado;
+  distractorBloque: DistractorLevel[];
   email: Email;
   tLlegadaMs: number;
   tPrimeraAperturaMs: number;
@@ -76,7 +76,7 @@ export function crearEventoDescartado(params: {
   participante: string;
   bloque: number;
   criterioVigente: CriterionId;
-  distractorBloque: DistractorAsignado;
+  distractorBloque: DistractorLevel[];
   email: Email;
   tLlegadaMs: number;
   tPrimeraAperturaMs: number | null;

@@ -19,7 +19,6 @@ import { SummaryScreen } from './components/screens/SummaryScreen';
 import {
   DISTRACTOR_SECUENCIA,
   DISTRACTOR_VOLUMEN_DEFAULT_PCT,
-  type DistractorAsignado,
   type DistractorLevel,
 } from './config/distractors.config';
 import { SESSION_CONFIG } from './config/session.config';
@@ -41,8 +40,8 @@ interface FocusFlowSesionProps {
   onCambiarDuracion: (indice: number, minutos: number) => void;
   volumenesPopup: Record<DistractorLevel, number>;
   onCambiarVolumen: (nivel: DistractorLevel, porcentaje: number) => void;
-  distractoresPorBloque: DistractorAsignado[];
-  onCambiarDistractorBloque: (indice: number, asignado: DistractorAsignado) => void;
+  distractoresPorBloque: DistractorLevel[][];
+  onCambiarDistractorBloque: (indice: number, nivel: DistractorLevel, activo: boolean) => void;
   /** Reinicia la sesión volviendo la duración y el volumen a sus valores por defecto, para que otro participante pueda empezar sin recargar la página. */
   onReiniciarNuevoParticipante: () => void;
   /** Reinicia la sesión conservando la duración y el volumen ya configurados. */
@@ -69,8 +68,8 @@ function FocusFlowSesion({
   const [aciertosBloque, setAciertosBloque] = useState(0);
   const [activeId, setActiveId] = useState<string | null>(null);
 
-  function distractorDelBloque(bloqueNumero: number): DistractorAsignado {
-    return distractoresPorBloque[bloqueNumero - 1] ?? 'ninguno';
+  function distractoresDelBloque(bloqueNumero: number): DistractorLevel[] {
+    return distractoresPorBloque[bloqueNumero - 1] ?? [];
   }
 
   const engine = useSessionEngine({
@@ -95,7 +94,7 @@ function FocusFlowSesion({
           participante: participanteId,
           bloque: ctx.bloqueNumero,
           criterioVigente: ctx.criterioVigente,
-          distractorBloque: distractorDelBloque(ctx.bloqueNumero),
+          distractorBloque: distractoresDelBloque(ctx.bloqueNumero),
           email: item.email,
           tLlegadaMs: item.arrivalTsMs,
           tPrimeraAperturaMs: item.firstOpenedTsMs,
@@ -108,9 +107,8 @@ function FocusFlowSesion({
   });
 
   const sesionActiva = engine.fase === 'bloque' || engine.fase === 'pausa';
-  const asignadoBloqueActual = distractorDelBloque(engine.bloqueNumero);
-  const nivelActivo = asignadoBloqueActual === 'ninguno' ? null : asignadoBloqueActual;
-  const distractores = useDistractorPopups(sesionActiva, nivelActivo);
+  const nivelesBloqueActual = distractoresDelBloque(engine.bloqueNumero);
+  const distractores = useDistractorPopups(sesionActiva, nivelesBloqueActual);
 
   // Los aciertos que hacen falta para avanzar de bloque se cuentan solo
   // dentro del bloque vigente: se reinician tanto si el bloque cambió por
@@ -156,7 +154,7 @@ function FocusFlowSesion({
       participante: participanteId,
       bloque: engine.bloqueNumero,
       criterioVigente: engine.criterioVigente,
-      distractorBloque: asignadoBloqueActual,
+      distractorBloque: nivelesBloqueActual,
       email: item.email,
       tLlegadaMs: item.arrivalTsMs,
       tPrimeraAperturaMs: item.firstOpenedTsMs,
@@ -283,9 +281,9 @@ function volumenesPorDefecto(): Record<DistractorLevel, number> {
   ) as Record<DistractorLevel, number>;
 }
 
-/** Por defecto cada bloque arranca con el mismo nivel que antes recorría el ciclo automático. */
-function distractoresPorDefecto(): DistractorAsignado[] {
-  return [...DISTRACTOR_SECUENCIA];
+/** Por defecto cada bloque arranca con un único nivel asignado, en el mismo orden que antes recorría el ciclo automático. */
+function distractoresPorDefecto(): DistractorLevel[][] {
+  return DISTRACTOR_SECUENCIA.map((nivel) => [nivel]);
 }
 
 export default function App() {
@@ -299,7 +297,7 @@ export default function App() {
   const [volumenesPopup, setVolumenesPopup] =
     useState<Record<DistractorLevel, number>>(volumenesPorDefecto);
   const [distractoresPorBloque, setDistractoresPorBloque] =
-    useState<DistractorAsignado[]>(distractoresPorDefecto);
+    useState<DistractorLevel[][]>(distractoresPorDefecto);
 
   const handleCambiarDuracion = useCallback((indice: number, minutos: number) => {
     setDuracionesBloqueMin((prev) => prev.map((valor, i) => (i === indice ? minutos : valor)));
@@ -309,9 +307,21 @@ export default function App() {
     setVolumenesPopup((prev) => ({ ...prev, [nivel]: porcentaje }));
   }, []);
 
-  const handleCambiarDistractorBloque = useCallback((indice: number, asignado: DistractorAsignado) => {
-    setDistractoresPorBloque((prev) => prev.map((valor, i) => (i === indice ? asignado : valor)));
-  }, []);
+  const handleCambiarDistractorBloque = useCallback(
+    (indice: number, nivel: DistractorLevel, activo: boolean) => {
+      setDistractoresPorBloque((prev) =>
+        prev.map((niveles, i) => {
+          if (i !== indice) return niveles;
+          const siguientes = activo ? [...niveles, nivel] : niveles.filter((n) => n !== nivel);
+          // Se reordena según DISTRACTOR_SECUENCIA para que el ciclado dentro
+          // del bloque (ver useDistractorPopups) sea siempre el mismo orden
+          // canónico, sin depender de en qué orden se tildaron los checkboxes.
+          return DISTRACTOR_SECUENCIA.filter((n) => siguientes.includes(n));
+        }),
+      );
+    },
+    [],
+  );
 
   const handleReiniciarNuevoParticipante = useCallback(() => {
     setDuracionesBloqueMin(duracionesPorDefecto());

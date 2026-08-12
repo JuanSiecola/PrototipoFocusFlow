@@ -1,8 +1,5 @@
 export type DistractorLevel = 'nivel1' | 'nivel2' | 'nivel3';
 
-/** Distractor asignado a un bloque: uno de los 3 niveles, o ninguno. */
-export type DistractorAsignado = DistractorLevel | 'ninguno';
-
 export interface DistractorContent {
   titulo: string;
   mensaje: string;
@@ -19,9 +16,11 @@ export const DISTRACTOR_INTERVALO_MS = 20_000;
 export const DISTRACTOR_VOLUMEN_DEFAULT_PCT = 100;
 
 /**
- * Se repite en este orden mientras dure la sesión (nivel1, nivel2, nivel3,
- * nivel1, ...), así todos los participantes quedan expuestos por igual a
- * los tres tipos de distractor, sin depender del azar.
+ * Orden canónico de los 3 niveles: se usa para listarlos siempre igual en la
+ * pantalla de inicio (checkboxes y sliders de volumen) y, cuando un bloque
+ * tiene más de un nivel asignado, para alternar entre ellos en ese mismo
+ * orden mientras dure el bloque — así no depende del azar ni del orden en
+ * que se hayan tildado los checkboxes.
  */
 export const DISTRACTOR_SECUENCIA: DistractorLevel[] = ['nivel1', 'nivel2', 'nivel3'];
 

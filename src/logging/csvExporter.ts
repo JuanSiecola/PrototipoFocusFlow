@@ -28,12 +28,17 @@ function escaparCeldaCsv(valor: string | number | boolean | null): string {
   return texto;
 }
 
+/** Uno o varios niveles asignados se listan unidos por "+"; ninguno asignado se escribe literal. */
+function formatearDistractorBloque(niveles: readonly string[]): string {
+  return niveles.length > 0 ? niveles.join('+') : 'ninguno';
+}
+
 function eventoAFila(evento: SessionEvent): (string | number | boolean | null)[] {
   const comunes = [
     evento.participante,
     evento.bloque,
     evento.criterioVigente,
-    evento.distractorBloque,
+    formatearDistractorBloque(evento.distractorBloque),
     evento.idCorreo,
     evento.asunto,
     evento.tLlegadaMs,
