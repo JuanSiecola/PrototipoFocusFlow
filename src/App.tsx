@@ -174,6 +174,13 @@ function FocusFlowSesion({
     }
   }
 
+  function handleVolverAlInicio() {
+    const confirmar = window.confirm('¿Volver al inicio? Se perderá el progreso de la sesión actual.');
+    if (confirmar) {
+      onReiniciarMismaConfig();
+    }
+  }
+
   if (engine.fase === 'inicio') {
     return (
       <StartScreen
@@ -212,7 +219,7 @@ function FocusFlowSesion({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <AppShell>
+      <AppShell onVolverAlInicio={handleVolverAlInicio}>
         <InboxColumn
           items={emailQueue.pendientes}
           seleccionadoId={emailQueue.correoSeleccionadoId}
